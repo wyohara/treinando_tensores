@@ -1,0 +1,119 @@
+# 🐍 Python bytecode e arquivos compilados
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 📦 Distribuições / empacotamento
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 🧪 pytest e cobertura de testes
+.pytest_cache/
+.coverage
+.coverage.*
+.coverage.lcov
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test_results/
+.junitxml/
+
+# 🧹 Cache e logs
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# 🧠 Ambientes virtuais
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.env
+.venv
+.virtualenv
+virtualenv/
+pyvenv.cfg
+
+# 📝 Editores e IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-*
+.project
+.pydevproject
+.settings/
+*.bak
+*.orig
+
+# 📊 Jupyter Notebooks
+.ipynb_checkpoints
+*.ipynb
+
+# 🔐 Segurança
+.env.local
+.env.*.local
+.secrets
+*.pem
+*.key
+
+# 🎯 Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.ruff_cache/
+.ruff/
+
+# 📈 Benchmarks e profiling
+*.prof
+*.lprof
+benchmarks/results/
+
+# 🔧 Ferramentas específicas
+.tox/
+.flake8
+.tox/
+.mypy_cache/
+.ruff_cache/
+.pdm.toml
+pdm.lock
+uv.lock
+
+# 🗄️ Bancos de dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# 📁 Logs de testes específicos
+test-reports/
+test-output/
+test-results/
+
+#outros
+src/arquivos/dados_processamento/*
