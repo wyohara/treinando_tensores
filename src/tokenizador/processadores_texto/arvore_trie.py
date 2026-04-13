@@ -58,14 +58,14 @@ class ArvoreTrie(ProcessadorTestoAbs):
         for palavra in palavras:
             lista_palavras.append(palavra)
 
-        #aplicando o algoritmo ao texto
+        #aplicando o algoritmo ao texto e ordenando as palavras do maior para o menor
         for i, palavra in enumerate(sorted(lista_palavras, key=len, reverse=True)):
-            arvore = self.__montar_arvore_trie(palavra)
+            arvore = self.__montar_arvore_trie(palavra=palavra, arvore=arvore)
 
         self.salvar_arvore_trie(arvore)
         return arvore
 
-    def __montar_arvore_trie(self, palavra:str, contar_tokens=True) -> dict:
+    def __montar_arvore_trie(self,  palavra:str, arvore:dict = {},contar_tokens=True) -> dict:
         """
         Método que monta a ávore de trie. Cria um dicionário onde a chave é cada caractere. 
         Caso a sequência de caracteres não exista é criada uma ramificação e a chave fim, 
@@ -84,7 +84,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
             arvore: a árvore inicial atualizada com os novos valores
 
         """
-        no_atual = self.__arvore
+        no_atual = arvore
         raiz = True
 
         # cria o step do range, se for hex irá andar 2 bytes (1 char UNICODE) se utf-8 uma letra
@@ -109,7 +109,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
             
             no_atual = no_atual[letra] #incrementa a árvore para o próximo nó
             raiz = False # marca como não sendo mais raiz
-        return self.__arvore
+        return arvore
 
     def montar_lista_tokens(self) -> list:
         """
@@ -120,8 +120,9 @@ class ArvoreTrie(ProcessadorTestoAbs):
         Returns:
             list[token, quantidade_fim, tipo]: lista de objetos de token para salvar no bd
         """
+        arvore = self._get_arvore_trie()
 
-        pilha = [[self.__arvore, ""]]  # (nó_atual, token)
+        pilha = [[arvore, ""]]  # (nó_atual, token)
         resposta =[]
         while pilha:
             no_atual, token = pilha.pop()
@@ -130,7 +131,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
             if isinstance(no_atual, dict):          
                 if 'fim' in no_atual:
                     #caso utf-8 retorna para texto o hexadecimal
-                    resposta.append([token, no_atual['fim'], 'opcional'])
+                    resposta.append((token, no_atual['fim'], 'opcional'))
                     token = ''
                 
                 # Depois, processa os filhos (exceto 'fim')

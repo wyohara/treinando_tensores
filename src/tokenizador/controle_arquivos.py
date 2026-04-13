@@ -113,7 +113,4 @@ class ControleArquivos:
                 self.__processador_textos._processar_textos(texto)
                 #salvando o arquivo
                 self._salvar_texto_processado(str(dt.name), 'trie')
-        
-        return self.__processador_textos.montar_lista_tokens()
-    
-    
+            return self.__processador_textos.montar_lista_tokens()

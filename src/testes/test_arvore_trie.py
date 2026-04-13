@@ -15,6 +15,7 @@ def fixture_json_arvore_trie():
     yield ['amor amar amado', {'61':{'6d':{'fim':3,'6f':{'72':{'fim':1}},'61':{'72':{'fim':1},'fim':2,'64':{'6f':{'fim':1}}}}},'20':{'fim':1}}]
 
 
+
 #=============================================================
 #               Classe de teste
 #=============================================================
@@ -28,8 +29,9 @@ class TestArvoreTrie:
         #teardown
         print(f'\n🧹 rodando o teardown')
     
-    def test_processar_texto_usando_trie(self, fixture_json_arvore_trie):
+    def test_processar_texto_usando_trie(self,fixture_arquivo_json, fixture_json_arvore_trie):
         trie = ArvoreTrie()
+        trie.set_arquivo_json_arvore(fixture_arquivo_json)
         resultado = trie._processar_textos(fixture_json_arvore_trie[0])
         assert resultado == fixture_json_arvore_trie[1]
 
@@ -79,7 +81,6 @@ class TestArvoreTrie:
     def test_gerar_lista_tokens(self, fixture_arquivo_json):
         trie = ArvoreTrie()
         trie.set_arquivo_json_arvore(fixture_arquivo_json)
-        print(trie.montar_lista_tokens())
         assert len(trie.montar_lista_tokens())>0
     
     def test_gerar_lista_tokens(self, fixture_arquivo_json, fixture_json_arvore_trie):
@@ -95,8 +96,9 @@ class TestArvoreTrie:
 
     def test_gerar_lista_tokens(self, fixture_arquivo_json, fixture_json_arvore_trie):
         trie = ArvoreTrie()
-        trie._processar_textos(fixture_json_arvore_trie[0])
         trie.set_arquivo_json_arvore(fixture_arquivo_json)
+        with fixture_arquivo_json.open('w',encoding='utf-8') as arquivo:
+            json.dump(fixture_json_arvore_trie[1], arquivo, ensure_ascii=False, separators=(',', ':'))
         opcional = []
         for i in trie.montar_lista_tokens():
             if i[2]=='opcional': 
