@@ -56,6 +56,6 @@ if __name__ == "__main__":
         
         if args.modo == 'teste': # Executa em modo teste
             print("🔧 Executando em modo de teste...")
-            os.system("py.test.exe -s -v .\\src\\testes\\")
+            os.system("py.test.exe -s -vv .\\src\\testes\\")
         else:
             app()

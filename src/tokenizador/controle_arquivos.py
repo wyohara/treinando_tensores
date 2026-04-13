@@ -3,12 +3,13 @@ from pathlib import Path
 import json
 import re
 import pandas as pd
-from tokenizador.arvore_trie import ArvoreTrie
+from src.tokenizador.processadores_texto.arvore_trie import ArvoreTrie
 
 class ControleArquivos:
     def __init__(self):
         self.__pasta_dataset = Path('src/arquivos/dataset')
-        self.__arquivos_processados = Path('src/arquivos/dados_processamento/arquivos_processados.csv')        
+        self.__arquivos_processados = Path('src/arquivos/dados_processamento/arquivos_processados.csv')     
+        self.__processador_textos = ArvoreTrie()   
     
     @property
     def pasta_dataset(self)->Path:
@@ -18,15 +19,22 @@ class ControleArquivos:
     def arquivos_processados(self)->Path:
         return self.__arquivos_processados 
     
-    def _set_pasta_dataset(self, caminho_novo:Path):
+    def set_pasta_dataset(self, caminho_novo:Path):
         self.__pasta_dataset = caminho_novo
     
-    def _set_pasta_arquivos_processados(self, caminho_novo:Path):
+    def set_pasta_arquivos_processados(self, caminho_novo:Path):
         self.__arquivos_processados = caminho_novo   
 
     def _get_lista_arquivos_processados(self)->list:
         '''
-        Recupera a lista de arquivos processados
+        Recupera a lista de arquivos processados a partir do csv 'arquivos_processados
+
+        Return:
+            List [['nome', 'modelo_processamento']]: lista de dados
+
+        Excepts:
+            FileNotFoundError -> []: Não encontrao arquivo.
+            pd.errors.EmptyDataErro -> []: Arquivo sem nenhum dado.
         '''
         try:
             df = pd.read_csv(self.__arquivos_processados)
@@ -37,9 +45,36 @@ class ControleArquivos:
         except pd.errors.EmptyDataError:
             return []
     
-    def _carregar_dataset(self)->list[Path]:
+    def _salvar_texto_processado(self, nome_texto:str, modelo_processamento:str)->list:
         '''
-        Método que recupera os arquivos do dataset
+        Salva o texto no arquivo processado
+        Params:
+            nome_texto str: nome do arquivo de texto processado
+            modelo_processamento str: modelo de processamento de texto usado
+        Return:
+            List [['nome', 'modelo_processamento']]: lista de dados
+
+        Excepts:
+            FileNotFoundError -> []: Não encontrao arquivo.
+            pd.errors.EmptyDataErro -> []: Arquivo sem nenhum dado.
+        ''' 
+        try:
+            df = pd.read_csv(self.__arquivos_processados)
+            nova_linha = pd.DataFrame({'nome': [nome_texto], 'modelo_processamento': [modelo_processamento]})
+            df = pd.concat([df, nova_linha], ignore_index=True)
+            # Salva o CSV
+            df.to_csv(self.__arquivos_processados, index=False, encoding='utf-8')
+        except FileNotFoundError:
+            df = pd.DataFrame({'nome': [nome_texto], 'modelo_processamento': [modelo_processamento]})
+            df.to_csv(self.arquivos_processados, index=False, encoding='utf-8')
+        return self._get_lista_arquivos_processados()
+
+    def _carregar_todo_dataset(self)->list[Path]:
+        '''
+        Método que recupera a lista de Path dos arquivos do dataset
+
+        Return:
+            list[Path]: lista dos caminhos de todos os datasets, processado ou não
         '''
         arquivos_dataset = [f for f in self.__pasta_dataset.iterdir() if f.is_file()]
 
@@ -56,8 +91,29 @@ class ControleArquivos:
                 resultado.append(arquivo)
         return resultado
 
-    def _processar_textos(self, path_texto:Path = None):
-        texto = path_texto.read_text(encoding='utf-8')
-        return ArvoreTrie().processar_textos(texto)
+    def processar_textos(self, path_test:Path = None):
+        '''
+        Método que processa os textos
+        Params:
+            path_test Path: Path opcional para teste, se houver ele processa o texto no path
+                            Se não houver, ele carrega todos os datasets.
+        
+        return:
+            dados processados....
+        '''        
+        if path_test is not None:
+            texto = path_test.read_text(encoding='utf-8')
+            self.__processador_textos._processar_textos(texto)
 
+        else:
+            datasets = self._carregar_todo_dataset()
+            #processa todos os textos que não estão na lista de processados
+            for dt in datasets:
+                texto = dt.read_text(encoding='utf-8')
+                self.__processador_textos._processar_textos(texto)
+                #salvando o arquivo
+                self._salvar_texto_processado(str(dt.name), 'trie')
+        
+        return self.__processador_textos.montar_lista_tokens()
+    
     
