@@ -2,17 +2,22 @@
 import json
 import os
 import re
+import pandas as pd
 from pathlib import Path
 from src.tokenizador.processadores_texto.processador_texto_abs import ProcessadorTestoAbs
 
 class ArvoreTrie(ProcessadorTestoAbs):
     def __init__(self):
         self.__arquivo_json_arvore = Path('src/arquivos/dados_processamento/arvore_trie.json')     
+        self.__arquivo_css_tokens = Path('src/arquivos/dados_processamento/tokens.css')     
         self.__arvore = {}
     
     @property
     def get_arquivo_json_arvore(self)->Path:
         return self.__arquivo_json_arvore
+
+    def set_arquivo_css_tokens(self, path:Path):
+        self.__arquivo_css_tokens = path
     
     def set_arquivo_json_arvore(self, path:Path):
         self.__arquivo_json_arvore = path
@@ -92,23 +97,23 @@ class ArvoreTrie(ProcessadorTestoAbs):
         for i in range(0,len(palavra), step):
             letra =  self.texto_para_hex((palavra[i:i+step]))
 
-            # Cria o nó fim para uma bifurcação
-            if letra not in no_atual and letra != ' ':
-                # verifica se é raiz para não criar a chave fim no início da árvore
-                if (len(no_atual.keys())==1 and not raiz):
-                    no_atual['fim'] = 1
+            if 'fim' in no_atual:
+                no_atual['fim']+=1
+
+            # Se o nó para esta letra não existe, cria um novo dicionário
+            if letra not in no_atual:
+                if len(no_atual.keys()) >0:
+                    if not raiz:
+                        no_atual['fim'] = no_atual.get('fim', 1) + 1
                 no_atual[letra] = {}
-            
-            # incrementao contador de fim
-            if ('fim' in no_atual.keys()) and contar_tokens:
-                no_atual['fim'] += 1
+
+            # Desce para o nó filho (agora ele com certeza existe)
+            no_atual = no_atual[letra]
 
             # Se for a última letra, marca como fim de palavra
             if i == len(palavra) - step:
-                no_atual[letra]['fim'] = 1
-            
-            no_atual = no_atual[letra] #incrementa a árvore para o próximo nó
-            raiz = False # marca como não sendo mais raiz
+                no_atual['fim'] = no_atual.get('fim', 0) + 1
+            raiz = False
         return arvore
 
     def montar_lista_tokens(self) -> list:
@@ -146,3 +151,27 @@ class ArvoreTrie(ProcessadorTestoAbs):
         #extend para unir os tokens fixos e opcionais
         resposta.extend(self.definit_tokens_fixos())
         return resposta
+    
+    def gerar_css_tokens(self, tokens:list[list]):
+        try:
+            df = pd.DataFrame({
+                'valor':list(tokens[0]),
+                'quantidade':list(tokens[1]),
+                'formato':list(tokens[2]),
+            })
+            df.to_csv('meu_arquivo.csv', index=False, encoding='utf-8')
+            return True
+        except IndexError:
+            pass
+        return False
+
+    
+    def carregar_lista_tokens(self)->list:
+        try:
+            df = pd.read_csv(self.__arquivo_css_tokens)
+            dados = df.values.tolist()
+            return dados
+        except pd.errors.EmptyDataError:
+            return []
+        except FileNotFoundError:
+            return []
