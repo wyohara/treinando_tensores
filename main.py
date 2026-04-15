@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 from src.app import app
+import os
+import subprocess
 
 if __name__ == "__main__":
     try:
@@ -42,20 +44,22 @@ if __name__ == "__main__":
         # Aceitar também argumento posicional para conveniência:
         # python .\main.py -m teste ou python .\main.py --modo teste
         parser = argparse.ArgumentParser(description='Aprendendo Tensores')
-        parser.add_argument('-m','--modo', nargs='?', default='normal', 
-                        help='Modo de execução (normal, teste)')
+        parser.add_argument('modo', nargs='?', default='normal',
+                            help='Modo de execução (normal, teste)')
         
-        # Aceitar também argumento posicional para conveniência:
-        # python .\main.py teste
-        parser.add_argument('modo', 
-                        nargs='?', 
-                        default='normal',
-                        help='Modo como argumento posicional')
-        
+        parser.add_argument('test_file', nargs='?', default=None,
+                            help='Arquivo de teste específico (apenas no modo teste)')
+
         args = parser.parse_args()
-        
-        if args.modo == 'teste': # Executa em modo teste
+
+        if args.modo == 'teste':
             print("🔧 Executando em modo de teste...")
-            os.system("py.test.exe -s -vv .\\src\\testes\\")
+            if args.test_file:
+                # Executa apenas o arquivo específico
+                comando = ["pytest", "-s", "-vv", args.test_file]
+            else:
+                # Executa todos os testes da pasta padrão
+                comando = ["pytest", "-s", "-vv", ".\\src\\testes\\"]            
+            subprocess.run(comando)  # mais seguro que os.system
         else:
             app()

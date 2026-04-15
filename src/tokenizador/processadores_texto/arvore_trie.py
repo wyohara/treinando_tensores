@@ -9,7 +9,7 @@ from src.tokenizador.processadores_texto.processador_texto_abs import Processado
 class ArvoreTrie(ProcessadorTestoAbs):
     def __init__(self):
         self.__arquivo_json_arvore = Path('src/arquivos/dados_processamento/arvore_trie.json')     
-        self.__arquivo_css_tokens = Path('src/arquivos/dados_processamento/tokens.css')     
+        self.__arquivo_css_tokens = Path('src/arquivos/dados_processamento/tokens.csv')     
     
     @property
     def get_arquivo_json_arvore(self)->Path:
@@ -146,18 +146,16 @@ class ArvoreTrie(ProcessadorTestoAbs):
                             pilha.append((valor, token + chave)) 
                 except AttributeError:
                     pass
-        
         #extend para unir os tokens fixos e opcionais
-        resposta.extend(self.definir_tokens_fixos())
+        resposta.extend(self.gerar_tokens_fixos())
+        self.salvar_csv_tokens(resposta)
         return resposta
     
     def salvar_csv_tokens(self, tokens:list[list]):
+        if not tokens:
+            return False
         try:
-            df = pd.DataFrame({
-                'valor':list(tokens[0]),
-                'quantidade':list(tokens[1]),
-                'formato':list(tokens[2]),
-            })
+            df = pd.DataFrame(tokens, columns=['valor', 'quantidade', 'tipo'])
             df.to_csv(self.__arquivo_css_tokens, index=False, encoding='utf-8')
             return True
         except IndexError:

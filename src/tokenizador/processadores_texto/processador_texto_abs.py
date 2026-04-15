@@ -1,28 +1,35 @@
 from abc import ABC, abstractmethod
+def tokens_fixos():
+    # Total de 125 tokens fixos
+    tokens = [',', '?', '!', '{', '}', '[', ']', '(', ')', ';', '_', '/', '|', '@', '#', '\'', '’', '"', '”', '-', '—', '...', '.',# Originais (sem duplicar com os que vêm depois)
+                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',# Letras minúsculas
+                'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+                'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',# Letras maiúsculas
+                'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+                '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',# Números                  
+                '+', '*', '%', '**', '//', # Operadores aritméticos
+                '==', '!=', '<', '>', '<=', '>=',# Operadores de comparação
+                'and', 'or', 'not',# Operadores lógicos
+                '=', '+=', '-=', '*=', '/=', '%=', '**=', '//=',# Operadores de atribuição
+                '&', '^', '~', '<<', '>>',# Operadores bitwise
+                ':', '$', '`',# Símbolos e pontuação (apenas os que não estão nos originais)
+                '->', ':='# Outros operadores
+                '\n', ' ', '\t'# Espaçadores
+            ]
+    for i in range(len(tokens)):
+        tokens[i] = tokens[i].encode('utf-8').hex()
+    return tokens
 
-TOKENS = [',', '?', '!', '{', '}', '[', ']', '(', ')', ';', '_', '/', '|', '@', '#', '\'', '’', '"', '”', '-', '—', '...', '.',# Originais (sem duplicar com os que vêm depois)
-            'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm',# Letras minúsculas
-            'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-            'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',# Letras maiúsculas
-            'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',# Números                  
-            '+', '-', '*', '/', '%', '**', '//', # Operadores aritméticos
-            '==', '!=', '<', '>', '<=', '>=',# Operadores de comparação
-            'and', 'or', 'not',# Operadores lógicos
-            '=', '+=', '-=', '*=', '/=', '%=', '**=', '//=',# Operadores de atribuição
-            '&', '|', '^', '~', '<<', '>>',# Operadores bitwise
-            ':', ';', '@', '$', '`', ' ',# Símbolos e pontuação (apenas os que não estão nos originais)
-            '->', ':='# Outros operadores
-            '\n', ' ', '\t'# Espaçadores
-        ]
+TOKENS = tokens_fixos()
+
 
 class ProcessadorTestoAbs(ABC):
 
     @staticmethod
-    def definir_tokens_fixos()->list:
+    def gerar_tokens_fixos()->list:
         resposta = []
         for tk in TOKENS:
-            resposta.append([tk, 0, 'fixo'])
+            resposta.append([(tk), 0, 'fixo'])
         return resposta
 
     @staticmethod

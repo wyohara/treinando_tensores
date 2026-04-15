@@ -12,11 +12,11 @@ class ControleArquivos:
         self.__processador_textos = ArvoreTrie()   
     
     @property
-    def pasta_dataset(self)->Path:
+    def get_pasta_dataset(self)->Path:
         return self.__pasta_dataset
     
     @property
-    def arquivos_processados(self)->Path:
+    def get_arquivo_arquivos_processados(self)->Path:
         return self.__arquivos_processados 
     
     def set_pasta_dataset(self, caminho_novo:Path):
@@ -66,7 +66,7 @@ class ControleArquivos:
             df.to_csv(self.__arquivos_processados, index=False, encoding='utf-8')
         except FileNotFoundError:
             df = pd.DataFrame({'nome': [nome_texto], 'modelo_processamento': [modelo_processamento]})
-            df.to_csv(self.arquivos_processados, index=False, encoding='utf-8')
+            df.to_csv(self.get_arquivo_arquivos_processados, index=False, encoding='utf-8')
         return self._get_lista_arquivos_processados()
 
     def _carregar_todo_dataset(self)->list[Path]:
@@ -113,4 +113,7 @@ class ControleArquivos:
                 self.__processador_textos.processar_textos(texto)
                 #salvando o arquivo
                 self._salvar_texto_processado(str(dt.name), 'trie')
-            return self.__processador_textos.montar_lista_tokens()
+        return self.__processador_textos.montar_lista_tokens()
+    
+    def salvar_csv_tokens(self, tokens:list):
+        return self.__processador_textos.salvar_csv_tokens(tokens)
