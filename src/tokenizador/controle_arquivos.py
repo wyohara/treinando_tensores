@@ -103,14 +103,14 @@ class ControleArquivos:
         '''        
         if path_test is not None:
             texto = path_test.read_text(encoding='utf-8')
-            self.__processador_textos._processar_textos(texto)
+            self.__processador_textos.processar_textos(texto)
 
         else:
             datasets = self._carregar_todo_dataset()
             #processa todos os textos que não estão na lista de processados
             for dt in datasets:
                 texto = dt.read_text(encoding='utf-8')
-                self.__processador_textos._processar_textos(texto)
+                self.__processador_textos.processar_textos(texto)
                 #salvando o arquivo
                 self._salvar_texto_processado(str(dt.name), 'trie')
             return self.__processador_textos.montar_lista_tokens()

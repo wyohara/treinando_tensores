@@ -19,11 +19,15 @@ TOKENS = [',', '?', '!', '{', '}', '[', ']', '(', ')', ';', '_', '/', '|', '@', 
 class ProcessadorTestoAbs(ABC):
 
     @staticmethod
-    def definit_tokens_fixos()->list:
+    def definir_tokens_fixos()->list:
         resposta = []
         for tk in TOKENS:
             resposta.append([tk, 0, 'fixo'])
         return resposta
+
+    @staticmethod
+    def get_set_valor_tokens_fixos():
+        return set(TOKENS)
 
     @staticmethod
     def texto_para_hex(texto:str):

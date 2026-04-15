@@ -10,19 +10,23 @@ class ArvoreTrie(ProcessadorTestoAbs):
     def __init__(self):
         self.__arquivo_json_arvore = Path('src/arquivos/dados_processamento/arvore_trie.json')     
         self.__arquivo_css_tokens = Path('src/arquivos/dados_processamento/tokens.css')     
-        self.__arvore = {}
     
     @property
     def get_arquivo_json_arvore(self)->Path:
         return self.__arquivo_json_arvore
-
-    def set_arquivo_css_tokens(self, path:Path):
-        self.__arquivo_css_tokens = path
     
     def set_arquivo_json_arvore(self, path:Path):
         self.__arquivo_json_arvore = path
+
+    def set_arquivo_csv_tokens(self, path:Path):
+        self.__arquivo_css_tokens = path
+
+    @property
+    def get_arquivo_csv_tokens(self)->Path:
+        return self.__arquivo_css_tokens
     
-    def _get_arvore_trie(self)->dict:
+    
+    def get_arvore_trie(self)->dict:
         try:
             with self.__arquivo_json_arvore.open('r', encoding='utf-8') as arquivo:
                 return json.load(arquivo)
@@ -38,11 +42,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
             json.dump(arvore, arquivo, ensure_ascii=False, separators=(',', ':'))
             return True           
 
-    @property
-    def arvore(self):
-        return self.__arvore
-
-    def _processar_textos(self, texto:str):    
+    def processar_textos(self, texto:str):    
         """
         Método central que gerencia toda a criação da árvore de trier
         Percorre o corpus separando em palavras e aplica o processamento, após isso
@@ -55,7 +55,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
         Returns:
             list[TokenObject]: lista de objetos tokens
         """
-        arvore = self._get_arvore_trie()
+        arvore = self.get_arvore_trie()
         palavras =  re.findall(r'[^\s]+|\s+', texto)
         lista_palavras = []
         if not palavras:
@@ -70,7 +70,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
         self.salvar_arvore_trie(arvore)
         return arvore
 
-    def __montar_arvore_trie(self,  palavra:str, arvore:dict = {},contar_tokens=True) -> dict:
+    def __montar_arvore_trie(self,  palavra:str, arvore:dict = {}) -> dict:
         """
         Método que monta a ávore de trie. Cria um dicionário onde a chave é cada caractere. 
         Caso a sequência de caracteres não exista é criada uma ramificação e a chave fim, 
@@ -83,7 +83,6 @@ class ArvoreTrie(ProcessadorTestoAbs):
         Params:
             palavra: palavra processada que será usada na árvore
             arvore: ávore que será usada no processo
-            contar_tokens: incrementa o contador de tokens
 
         Returns:
             arvore: a árvore inicial atualizada com os novos valores
@@ -125,7 +124,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
         Returns:
             list[token, quantidade_fim, tipo]: lista de objetos de token para salvar no bd
         """
-        arvore = self._get_arvore_trie()
+        arvore = self.get_arvore_trie()
 
         pilha = [[arvore, ""]]  # (nó_atual, token)
         resposta =[]
@@ -135,10 +134,10 @@ class ArvoreTrie(ProcessadorTestoAbs):
             # Primeiro, verifica se o nó atual tem 'fim' diretamente e zera os tokens
             if isinstance(no_atual, dict):          
                 if 'fim' in no_atual:
-                    #caso utf-8 retorna para texto o hexadecimal
-                    resposta.append((token, no_atual['fim'], 'opcional'))
+                    #caso o token já exista nos tokens fixos é ignorado
+                    if token not in self.get_set_valor_tokens_fixos():
+                        resposta.append((token, no_atual['fim'], 'opcional'))
                     token = ''
-                
                 # Depois, processa os filhos (exceto 'fim')
                 #amarrado com try, caso entre por acidente em uma chave 'fim'
                 try:
@@ -149,17 +148,17 @@ class ArvoreTrie(ProcessadorTestoAbs):
                     pass
         
         #extend para unir os tokens fixos e opcionais
-        resposta.extend(self.definit_tokens_fixos())
+        resposta.extend(self.definir_tokens_fixos())
         return resposta
     
-    def gerar_css_tokens(self, tokens:list[list]):
+    def salvar_csv_tokens(self, tokens:list[list]):
         try:
             df = pd.DataFrame({
                 'valor':list(tokens[0]),
                 'quantidade':list(tokens[1]),
                 'formato':list(tokens[2]),
             })
-            df.to_csv('meu_arquivo.csv', index=False, encoding='utf-8')
+            df.to_csv(self.__arquivo_css_tokens, index=False, encoding='utf-8')
             return True
         except IndexError:
             pass
