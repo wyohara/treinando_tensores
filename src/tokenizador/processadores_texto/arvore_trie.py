@@ -128,6 +128,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
 
         pilha = [[arvore, ""]]  # (nó_atual, token)
         resposta =[]
+        pos_fim_tokens = []
         while pilha:
             no_atual, token = pilha.pop()
         
@@ -137,7 +138,14 @@ class ArvoreTrie(ProcessadorTestoAbs):
                     #caso o token já exista nos tokens fixos é ignorado
                     if token not in self.get_set_valor_tokens_fixos():
                         resposta.append((token, no_atual['fim'], 'opcional'))
-                    token = ''
+                        pos_fim_tokens.append([len(token), no_atual['fim']]) #sempre que acha o fim marca a posição para um slice
+                    
+                    if not any(isinstance(v, dict) for v in no_atual.values()): # caso chege ao fim do ramo
+                        for p in pos_fim_tokens: #percorre os marcadores de fim de token e salva como token possível
+                            if (token[p[0]:] and p[0]< len(token)):
+                                resposta.append((token[p[0]:], p[1], 'opcional'))
+                        pos_fim_tokens = []
+                        token = ''
                 # Depois, processa os filhos (exceto 'fim')
                 #amarrado com try, caso entre por acidente em uma chave 'fim'
                 try:
@@ -154,8 +162,19 @@ class ArvoreTrie(ProcessadorTestoAbs):
     def salvar_csv_tokens(self, tokens:list[list]):
         if not tokens:
             return False
+        
+        checagem = set()
+        token_nao_repetido=[]
+        for tk in tokens:
+            if (((tk[0]) not in checagem) or (tk[2] == 'fixo')):
+                checagem.add(tk[0])
+                token_nao_repetido.append(tk)
+                
         try:
-            df = pd.DataFrame(tokens, columns=['valor', 'quantidade', 'tipo'])
+            token_indexado = []
+            for i, tk in enumerate(token_nao_repetido):
+                token_indexado.append([tk[0], tk[1], tk[2], i+1])
+            df = pd.DataFrame(token_indexado, columns=['valor', 'quantidade', 'tipo', 'id'])
             df.to_csv(self.__arquivo_css_tokens, index=False, encoding='utf-8')
             return True
         except IndexError:

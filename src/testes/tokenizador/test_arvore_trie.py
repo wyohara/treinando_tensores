@@ -94,8 +94,8 @@ class TestArvoreTrie:
         opcional = []
         for i in trie.montar_lista_tokens():
             if i[2]=='opcional': 
-                opcional.append(i[2])
-        assert len(opcional) == 2 #['am' 'do'] em hex como opcional e ['a', 'r', 'o', ' '] em hex como fixo
+                opcional.append([i[0], i[2]])
+        assert len(opcional) == 7 #['am', 'amor', 'or', 'ama', amar, 'r', 'amado'] em hex como opcional e ['a', 'r', 'o', ' '] em hex como fixo
         assert len(trie.montar_lista_tokens())>5
     
     def test_verificar_se_cria_arquivo_tokens(self):

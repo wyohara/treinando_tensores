@@ -47,7 +47,46 @@ class TestTokenizador:
     def test_tentar_recuperar_mais_tokens_que_existe(self):
         tk:Tokenizador = self.__classe_teste
         with pytest.raises(IndexError):
-            tk.gerar_tokens(quantidade=1500000000)
+            tk.gerar_tokens(quantidade=tk.total_tokens_possiveis+1)
+    
+    def test_tokenizar_texto(self):
+        tk:Tokenizador = self.__classe_teste
+        for i in tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho"):
+            assert isinstance(i,int) == True
 
+    def test_reversao_token_lista_utf8(self):
+        tk:Tokenizador = self.__classe_teste
+        tokens = tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho")
+        reversao = tk.reverter_tokenizacao(tokens,utf8=True)
+        for i in reversao:
+            assert isinstance(i,str) == True
+            assert all(c in '0123456789abcdefABCDEF' for c in i) == False
+
+    def test_reversao_token_lista_hex(self):
+        tk:Tokenizador = self.__classe_teste
+        tokens = tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho")
+        reversao = tk.reverter_tokenizacao(tokens)
+        for i in reversao:
+            assert isinstance(i,str) == True
+            assert all(c in '0123456789abcdefABCDEF' for c in i) == True
+
+    def test_reversao_token_concatenado(self):
+        tk:Tokenizador = self.__classe_teste
+        tokens = tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho")
+        reversao = tk.reverter_tokenizacao(tokens,concatenar=True)
+        assert isinstance(reversao, str)
+
+    def test_reversao_token_concatenado_utf8(self):
+        tk:Tokenizador = self.__classe_teste
+        tokens = tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho")
+        reversao = tk.reverter_tokenizacao(tokens,concatenar=True,utf8=True)
+        assert isinstance(reversao, str)
+        assert all(c in '0123456789abcdefABCDEF' for c in reversao) == False
+
+    def test_reversao_token_concatenado_hex(self):
+        tk:Tokenizador = self.__classe_teste
+        tokens = tk.tokenizar_texto(tk.gerar_tokens(100000),"claraboia, acho")
+        reversao = tk.reverter_tokenizacao(tokens,concatenar=True,utf8=False)
+        assert all(c in '0123456789abcdefABCDEF' for c in reversao) == True
 
 
