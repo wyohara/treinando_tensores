@@ -16,25 +16,25 @@ class ControleArquivos:
         return self.__pasta_dataset
     
     @property
-    def get_arquivo_arquivos_processados(self)->Path:
+    def get_path_arquivos_processados(self)->Path:
         return self.__arquivos_processados 
     
-    def set_pasta_dataset(self, caminho_novo:Path):
-        self.__pasta_dataset = caminho_novo
+    def set_pasta_dataset(self, path_novo:Path):
+        self.__pasta_dataset = path_novo
     
-    def set_pasta_arquivos_processados(self, caminho_novo:Path):
-        self.__arquivos_processados = caminho_novo   
+    def set_pasta_arquivos_processados(self, path_novo:Path):
+        self.__arquivos_processados = path_novo   
 
     def _get_lista_arquivos_processados(self)->list:
         '''
-        Recupera a lista de arquivos processados a partir do csv 'arquivos_processados
+        Recupera a lista de arquivos processados em formato de lista de 2 colunas
 
         Return:
             List [['nome', 'modelo_processamento']]: lista de dados
 
         Excepts:
-            FileNotFoundError -> []: Não encontrao arquivo.
-            pd.errors.EmptyDataErro -> []: Arquivo sem nenhum dado.
+            FileNotFoundError -> []: Não encontra o arquivo.
+            pd.errors.EmptyDataError -> []: Arquivo sem nenhum dado.
         '''
         try:
             df = pd.read_csv(self.__arquivos_processados)
@@ -47,7 +47,7 @@ class ControleArquivos:
     
     def _salvar_texto_processado(self, nome_texto:str, modelo_processamento:str)->list:
         '''
-        Salva o texto no arquivo processado
+        Salva o texto depois de processado
         Params:
             nome_texto str: nome do arquivo de texto processado
             modelo_processamento str: modelo de processamento de texto usado
@@ -66,10 +66,10 @@ class ControleArquivos:
             df.to_csv(self.__arquivos_processados, index=False, encoding='utf-8')
         except FileNotFoundError:
             df = pd.DataFrame({'nome': [nome_texto], 'modelo_processamento': [modelo_processamento]})
-            df.to_csv(self.get_arquivo_arquivos_processados, index=False, encoding='utf-8')
+            df.to_csv(self.get_path_arquivos_processados, index=False, encoding='utf-8')
         return self._get_lista_arquivos_processados()
 
-    def _carregar_todo_dataset(self)->list[Path]:
+    def _carregar_lista_arquivos_dataset(self)->list[Path]:
         '''
         Método que recupera a lista de Path dos arquivos do dataset
 
@@ -94,19 +94,20 @@ class ControleArquivos:
     def processar_textos(self, path_test:Path = None):
         '''
         Método que processa os textos
+
         Params:
             path_test Path: Path opcional para teste, se houver ele processa o texto no path
                             Se não houver, ele carrega todos os datasets.
         
         return:
-            dados processados....
+            list[token, quantidade_fim, tipo, id]: lista de tokens do texto processado
         '''        
         if path_test is not None:
             texto = path_test.read_text(encoding='utf-8')
             self.__processador_textos.processar_textos(texto)
 
         else:
-            datasets = self._carregar_todo_dataset()
+            datasets = self._carregar_lista_arquivos_dataset()
             #processa todos os textos que não estão na lista de processados
             for dt in datasets:
                 texto = dt.read_text(encoding='utf-8')
@@ -115,5 +116,14 @@ class ControleArquivos:
                 self._salvar_texto_processado(str(dt.name), 'trie')
         return self.__processador_textos.montar_lista_tokens()
     
-    def salvar_csv_tokens(self, tokens:list):
-        return self.__processador_textos.salvar_csv_tokens(tokens)
+    def salvar_tokens(self, tokens:list):
+        '''
+        Método salva os tokens
+
+        Params:
+            list[token, quantidade_fim, tipo, id]: lista de tokens do texto processado
+        '''        
+        if len(tokens[0]) == 4: #caso o número de tokens não bata com o esperado
+            return self.__processador_textos.salvar_csv_tokens(tokens)
+        else:
+            raise IndexError

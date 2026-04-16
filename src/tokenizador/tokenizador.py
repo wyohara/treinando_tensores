@@ -21,7 +21,7 @@ class Tokenizador():
         if self.__df.empty:
             controle_arquivos = ControleArquivos()
             lista_tokens = controle_arquivos.processar_textos()
-            controle_arquivos.salvar_csv_tokens(lista_tokens)
+            controle_arquivos.salvar_tokens(lista_tokens)
 
         return self.__gerar_tokenizador(self.__df, quantidade)
 

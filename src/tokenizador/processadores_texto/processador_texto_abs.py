@@ -1,4 +1,7 @@
 from abc import ABC, abstractmethod
+import pandas as pd
+from pathlib import Path
+
 def tokens_fixos():
     # Total de 125 tokens fixos
     tokens = [',', '?', '!', '{', '}', '[', ']', '(', ')', ';', '_', '/', '|', '@', '#', '\'', '’', '"', '”', '-', '—', '...', '.',# Originais (sem duplicar com os que vêm depois)
@@ -23,7 +26,9 @@ def tokens_fixos():
 TOKENS = tokens_fixos()
 
 
-class ProcessadorTestoAbs(ABC):
+class ProcessadorTextoAbs(ABC):
+    def __init__(self):
+        self.__arquivo_tokens = None
 
     @staticmethod
     def gerar_tokens_fixos()->list:
@@ -46,3 +51,42 @@ class ProcessadorTestoAbs(ABC):
     @staticmethod
     def hex_para_texto(texto_hex):
         return bytes.fromhex(texto_hex).decode('utf-8',errors='surrogateescape')
+    
+    @abstractmethod
+    def processar_textos(self, texto:str)->bool:
+        pass
+
+    
+    def salvar_csv_tokens(self, path:Path, tokens:list[list], cabecalhos:list[str]):
+        if not tokens:
+            return False  # Sem dados
+        
+        num_colunas = len(cabecalhos)
+        
+        # Verifica se todas as linhas têm o número correto de colunas
+        for i, linha in enumerate(tokens):
+            if len(linha) != len(cabecalhos):
+                raise ValueError
+        
+        try:
+            # Cria DataFrame diretamente (sem copiar desnecessariamente)
+            df = pd.DataFrame(tokens, columns=cabecalhos)
+            
+            # Garante que o diretório existe
+            path.parent.mkdir(parents=True, exist_ok=True)
+            # Salva CSV
+            df.to_csv(str(path), index=False, encoding='utf-8')
+            return True
+            
+        except (OSError, PermissionError, IOError) as e:
+            return False
+        
+    def carregar_lista_tokens(self, path:Path)->list:
+        try:
+            df = pd.read_csv(str(path))
+            dados = df.values.tolist()
+            return dados
+        except pd.errors.EmptyDataError:
+            return []
+        except FileNotFoundError:
+            return []

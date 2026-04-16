@@ -4,9 +4,9 @@ import os
 import re
 import pandas as pd
 from pathlib import Path
-from src.tokenizador.processadores_texto.processador_texto_abs import ProcessadorTestoAbs
+from src.tokenizador.processadores_texto.processador_texto_abs import ProcessadorTextoAbs
 
-class ArvoreTrie(ProcessadorTestoAbs):
+class ArvoreTrie(ProcessadorTextoAbs):
     def __init__(self):
         self.__arquivo_json_arvore = Path('src/arquivos/dados_processamento/arvore_trie.json')     
         self.__arquivo_css_tokens = Path('src/arquivos/dados_processamento/tokens.csv')     
@@ -23,10 +23,9 @@ class ArvoreTrie(ProcessadorTestoAbs):
 
     @property
     def get_arquivo_csv_tokens(self)->Path:
-        return self.__arquivo_css_tokens
+        return self.__arquivo_css_tokens    
     
-    
-    def get_arvore_trie(self)->dict:
+    def _get_arvore_trie(self)->dict:
         try:
             with self.__arquivo_json_arvore.open('r', encoding='utf-8') as arquivo:
                 return json.load(arquivo)
@@ -35,7 +34,7 @@ class ArvoreTrie(ProcessadorTestoAbs):
         except json.decoder.JSONDecodeError:
             return {}
 
-    def salvar_arvore_trie(self, arvore:dict):
+    def __salvar_arvore_trie(self, arvore:dict):
         if not arvore:
             return False      
         with self.__arquivo_json_arvore.open('w',encoding='utf-8') as arquivo:
@@ -55,19 +54,17 @@ class ArvoreTrie(ProcessadorTestoAbs):
         Returns:
             list[TokenObject]: lista de objetos tokens
         """
-        arvore = self.get_arvore_trie()
-        palavras =  re.findall(r'[^\s]+|\s+', texto)
-        lista_palavras = []
-        if not palavras:
+        arvore = self._get_arvore_trie() #carrega a árvore de trie se existir
+        palavras =  re.findall(r'[^\s]+|\s+', texto) # faz slice usando espaço
+
+        if not palavras: #se não houver palavras lança index error
             raise ValueError
-        for palavra in palavras:
-            lista_palavras.append(palavra)
 
         #aplicando o algoritmo ao texto e ordenando as palavras do maior para o menor
-        for i, palavra in enumerate(sorted(lista_palavras, key=len, reverse=True)):
+        for i, palavra in enumerate(sorted(palavras, key=len, reverse=True)):
             arvore = self.__montar_arvore_trie(palavra=palavra, arvore=arvore)
 
-        self.salvar_arvore_trie(arvore)
+        self.__salvar_arvore_trie(arvore)
         return arvore
 
     def __montar_arvore_trie(self,  palavra:str, arvore:dict = {}) -> dict:
@@ -98,12 +95,14 @@ class ArvoreTrie(ProcessadorTestoAbs):
 
             if 'fim' in no_atual:
                 no_atual['fim']+=1
+            if 'ramo' in no_atual:
+                no_atual['ramo']+=1
 
             # Se o nó para esta letra não existe, cria um novo dicionário
-            if letra not in no_atual:
-                if len(no_atual.keys()) >0:
+            if letra not in no_atual :
+                if len(no_atual.keys()) >0 and i != len(palavra) - step:
                     if not raiz:
-                        no_atual['fim'] = no_atual.get('fim', 1) + 1
+                        no_atual['ramo'] = no_atual.get('ramo', 1) + 1
                 no_atual[letra] = {}
 
             # Desce para o nó filho (agora ele com certeza existe)
@@ -122,42 +121,86 @@ class ArvoreTrie(ProcessadorTestoAbs):
             formato: formato do texto em 'utf-8' ou 'hex'
         
         Returns:
-            list[token, quantidade_fim, tipo]: lista de objetos de token para salvar no bd
+            list[token, quantidade_fim, tipo, id]: lista de objetos de token para salvar no bd
         """
-        arvore = self.get_arvore_trie()
+        arvore = self._get_arvore_trie()
+        pilha = [(arvore, "")]  # (nó_atual, token_acumulado, posicao_inicio_token_atual)
 
-        pilha = [[arvore, ""]]  # (nó_atual, token)
-        resposta =[]
-        pos_fim_tokens = []
+        lista_posicoes = []
+        resposta_lista = []
         while pilha:
-            no_atual, token = pilha.pop()
+            no_atual, token_hex = pilha.pop()
+            
+            if not isinstance(no_atual, dict):
+                continue
+                
+            # Processa 'fim' se existir no nó atual
+            if 'ramo' in no_atual:
+                valor_fim = no_atual['ramo']
+                token = self.hex_para_texto(token_hex)
+                lista_posicoes.append([len(token)-1, valor_fim])
+            
+            if (no_atual.keys()) == {'fim'}: 
+                valor_fim = no_atual['fim']
+                token = self.hex_para_texto(token_hex)
+                lista_posicoes.append([len(token)-1, valor_fim])
+                #caso ache um dicionário que é folha - somente com {'fim'}
+                resposta_lista = self.__recortar_posicoes_tokens_da_lista(lista_posicoes,
+                                                                    token,
+                                                                    no_atual['fim'])
+                
+            # Adiciona filhos (exceto 'fim') à pilha
+            for chave, valor in no_atual.items():
+                if chave != 'fim':
+                    novo_token = token_hex + chave
+                    pilha.append((valor, novo_token))
+                else:
+                    lista_posicoes.append([len(token_hex), valor_fim])
+
+        #adiciona os tokens fixos
+        resultado = self.gerar_tokens_fixos()
+        resultado.extend(resposta_lista)
+        #salva os tokens
+        self.salvar_csv_tokens(resultado)
+        return resultado
+
+    def __recortar_posicoes_tokens_da_lista(self, 
+                                            lista_posicoes,
+                                            palavra,
+                                            quant_no_folha) -> list[str, int, str]:
+        '''
+        Método acessório de 'montar_lista_tokens', ele cria a lista das combinações de tokens possíveis e salva em uma lista, além de adicionar os tokens fixos
+        Params:
+            - lista_posicoes list[int,int]: lista com cada linha contendo a posição do token dentro da palavra final e a quantidade de vezes que ocorreu
+            - palavra: palavra encontrada após chegar ao nó folha da árvore
+            - quant_no_folha: número de vezes que o nó folha foi alcançado na árvore
+        '''
+        print(lista_posicoes)
+        resposta_dict = {}
+        # cria o primeiro token que é a palavra completa
+        resposta_dict[palavra] = [quant_no_folha, 'opcional'] 
+        #percorre as posicoes para criar os tokens possíveis
+        for chave_i in lista_posicoes:
+            for chave_f in lista_posicoes:
+                #garante que a chave inicial é menor que a final
+                if (chave_i[0]<=chave_f[0]) and chave_f[0]<=len(palavra):
+                    tk_candidato = palavra[chave_i[0]:chave_f[0]]                    
+                    #verifica se o trecho não é token fixo
+                    if tk_candidato not in self.get_set_valor_tokens_fixos():
+                        #verifica se o trecho não esta repetido
+                        if tk_candidato not in resposta_dict.keys():
+                            resposta_dict[tk_candidato] = [chave_f[1], 'opcional']
+                            print(chave_i[0], chave_f[0],tk_candidato, palavra)
+                        #se repetido usa a maior quantidade
+                        else:
+                            if resposta_dict[tk_candidato][0]<chave_f[1]:
+                                resposta_dict[tk_candidato][0] = chave_f[1]
         
-            # Primeiro, verifica se o nó atual tem 'fim' diretamente e zera os tokens
-            if isinstance(no_atual, dict):          
-                if 'fim' in no_atual:
-                    #caso o token já exista nos tokens fixos é ignorado
-                    if token not in self.get_set_valor_tokens_fixos():
-                        resposta.append((token, no_atual['fim'], 'opcional'))
-                        pos_fim_tokens.append([len(token), no_atual['fim']]) #sempre que acha o fim marca a posição para um slice
-                    
-                    if not any(isinstance(v, dict) for v in no_atual.values()): # caso chege ao fim do ramo
-                        for p in pos_fim_tokens: #percorre os marcadores de fim de token e salva como token possível
-                            if (token[p[0]:] and p[0]< len(token)):
-                                resposta.append((token[p[0]:], p[1], 'opcional'))
-                        pos_fim_tokens = []
-                        token = ''
-                # Depois, processa os filhos (exceto 'fim')
-                #amarrado com try, caso entre por acidente em uma chave 'fim'
-                try:
-                    for chave, valor in no_atual.items():
-                        if chave != 'fim':
-                            pilha.append((valor, token + chave)) 
-                except AttributeError:
-                    pass
-        #extend para unir os tokens fixos e opcionais
-        resposta.extend(self.gerar_tokens_fixos())
-        self.salvar_csv_tokens(resposta)
-        return resposta
+        # transformando a resposta em lista
+        resposta_lista = []
+        for chave_i in resposta_dict.keys():
+            resposta_lista.append([chave_i, resposta_dict[chave_i][0], resposta_dict[chave_i][1]])
+        return resposta_lista
     
     def salvar_csv_tokens(self, tokens:list[list]):
         if not tokens:
@@ -181,7 +224,6 @@ class ArvoreTrie(ProcessadorTestoAbs):
             pass
         return False
 
-    
     def carregar_lista_tokens(self)->list:
         try:
             df = pd.read_csv(self.__arquivo_css_tokens)

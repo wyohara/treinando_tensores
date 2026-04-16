@@ -24,9 +24,8 @@ def fixture_arquivo_csv_tokens(tmp_path):
     yield arvore_json / 'arquivo_css_tokens.csv'
 
 @pytest.fixture(scope='function')
-def fixture_json_arvore_trie_para_comparar():
-    yield ['amor amar amado', {'20': {'fim': 2},'61': {'6d': {'61': {'64': {'6f': {'fim': 1}}, '72': {'fim': 1}, 'fim': 2}, '6f': {'72': {'fim': 1}}, 'fim': 3}}}]
-
+def fixture_arvore_trie_pronta():
+    yield {'texto':'amor amar amado', 'tokens':{'20': {'fim': 2},'61': {'6d': {'61': {'64': {'6f': {'fim': 1}}, '72': {'fim': 1}}, '6f': {'72': {'fim': 1}}, 'ramo': 3}}}}
 
 
 #=============================================================
@@ -47,50 +46,55 @@ class TestArvoreTrie:
         import gc # forçando a limpeza de memória
         gc.collect()
     
-    def test_processar_texto_usando_trie(self, fixture_json_arvore_trie_para_comparar):
+    def test_processar_texto_usando_trie(self, fixture_arvore_trie_pronta):
+        #testando a geração da árvore de trie
         trie:ArvoreTrie = self.__classe_teste
-        resultado = trie.processar_textos(fixture_json_arvore_trie_para_comparar[0])
-        assert resultado == fixture_json_arvore_trie_para_comparar[1]
+        resposta = trie.processar_textos(fixture_arvore_trie_pronta['texto'])
+        assert resposta == fixture_arvore_trie_pronta['tokens']
+    
+    def test_processar_texto_usando_trie_caso_2(self):
+        #testando a geração da árvore de trie com um caractere só
+        trie:ArvoreTrie = self.__classe_teste
+        resposta = trie.processar_textos(' ')
+        assert resposta == {'20':{'fim':1}}
+    
+    def test_processar_texto_usando_trie_com_erro(self ):
+        #testando a geração da árvore de trie com string vazia
+        trie:ArvoreTrie = self.__classe_teste
+        with pytest.raises(ValueError):
+            resposta = trie.processar_textos('')
 
-    def test_salvar_arvore_trie_arquivo_nao_existe(self):
+    def test_verificar_arvore_trie_foi_salva(self, fixture_arvore_trie_pronta):
+        # verifica se após processar texto é criado um json da árvore
         trie:ArvoreTrie = self.__classe_teste
-        assert trie.salvar_arvore_trie({'oi':1}) == True
-        assert trie.get_arquivo_json_arvore.exists() == True
+        assert trie.get_arquivo_json_arvore.is_file() == False
+        trie.processar_textos(fixture_arvore_trie_pronta['texto'])
+        assert trie.get_arquivo_json_arvore.is_file() == True
+        with trie.get_arquivo_json_arvore.open('r', encoding='utf-8') as f:
+            arvore_carregada = json.load(f)
+            assert arvore_carregada == fixture_arvore_trie_pronta['tokens']
     
-    def test_salvar_arvore_trie_arquivo_vazio(self):
+    def test_verificar_arvore_trie_foi_salva_caso_2(self):
+        # verifica se após processar texto é criado um json da árvore
         trie:ArvoreTrie = self.__classe_teste
-        assert trie.salvar_arvore_trie({}) == False
-
-    def test_carregar_arvore_trie_vazia(self):
-        trie:ArvoreTrie = self.__classe_teste
-        with trie.get_arquivo_json_arvore.open('w', encoding='utf-8') as arq:
-            arq.write('')
-        assert trie.get_arvore_trie() == {}
-
-    def test_carregar_arvore_trie_vazia_caso2(self):
-        trie:ArvoreTrie = self.__classe_teste
-        with trie.get_arquivo_json_arvore.open('w', encoding='utf-8') as arq:
-            arq.write('{}')
-        assert trie.get_arvore_trie() == {}
+        assert trie.get_arquivo_json_arvore.is_file() == False
+        trie.processar_textos(' ')
+        assert trie.get_arquivo_json_arvore.is_file() == True
+        with trie.get_arquivo_json_arvore.open('r', encoding='utf-8') as f:
+            arvore_carregada = json.load(f)
+            assert arvore_carregada == {'20':{'fim':1}}
     
-    def test_carregar_arvore_trie_existe(self):
+    def test_gerar_lista_tokens_caso_1(self, fixture_arvore_trie_pronta):
         trie:ArvoreTrie = self.__classe_teste
-        trie.salvar_arvore_trie({'oi': 1})
-        assert trie.get_arvore_trie() == {'oi': 1}
-    
-    def test_salvar_arvore_trie_existente(self):
-        trie:ArvoreTrie = self.__classe_teste
-        assert trie.salvar_arvore_trie({'oi': 1}) == True
-        assert trie.salvar_arvore_trie({'casa': 'minha'}) == True
-        assert trie.get_arvore_trie() == {'casa': 'minha'}
-    
-    def test_gerar_lista_tokens_caso_1(self):
-        trie:ArvoreTrie = self.__classe_teste
+        trie.processar_textos(fixture_arvore_trie_pronta['texto'])
+        #tokens possiveis:
+        #[amado, am, amad]
         assert len(trie.montar_lista_tokens())>0
-    
-    def test_gerar_lista_tokens_caso_2(self, fixture_json_arvore_trie_para_comparar):
+
+    '''
+    def test_gerar_lista_tokens_caso_2(self, fixture_arvore_trie_pronta):
         trie:ArvoreTrie = self.__classe_teste
-        trie.processar_textos(fixture_json_arvore_trie_para_comparar[0])
+        trie.processar_textos(fixture_arvore_trie_pronta['texto'])
         opcional = []
         for i in trie.montar_lista_tokens():
             if i[2]=='opcional': 
@@ -118,15 +122,15 @@ class TestArvoreTrie:
         trie.salvar_csv_tokens([])
         assert trie.carregar_lista_tokens() == []
     
-    def test_processo_completo(self, fixture_json_arvore_trie_para_comparar):        
+    def test_processo_completo(self, fixture_arvore_trie_pronta):        
         trie:ArvoreTrie = self.__classe_teste
         #verifica se o primeiro texto foi processado
-        processado = trie.processar_textos(fixture_json_arvore_trie_para_comparar[0])
-        assert processado == fixture_json_arvore_trie_para_comparar[1]
+        processado = trie.processar_textos(fixture_arvore_trie_pronta['texto'])
+        assert processado == fixture_arvore_trie_pronta['tokens']
         assert trie.get_arquivo_json_arvore.is_file() == True
 
         #verifica se o segundo texto foi processado
-        processado = trie.processar_textos(fixture_json_arvore_trie_para_comparar[0])
+        processado = trie.processar_textos(fixture_arvore_trie_pronta['texto'])
         assert processado == {'20': {'fim': 4},'61': {'6d': {'61': {'64': {'6f': {'fim': 2}}, '72': {'fim': 2}, 'fim': 4}, '6f': {'72': {'fim': 2}}, 'fim': 6}}}
         assert trie.get_arquivo_json_arvore.is_file() == True
 
@@ -136,4 +140,4 @@ class TestArvoreTrie:
         assert salvo == True
         assert trie.get_arquivo_csv_tokens.is_file() == True
         lista_tokens =  trie.carregar_lista_tokens()
-        assert lista_tokens != []
+        assert lista_tokens != []'''

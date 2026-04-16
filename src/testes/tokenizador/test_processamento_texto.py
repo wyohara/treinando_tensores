@@ -50,68 +50,64 @@ class TestProcessamentoTexto:
         import gc # forçando a limpeza de memória
         gc.collect()
 
-    def test_verificar_pastas_existem(self):
+    def test_verificar_arquivos_dataset(self):
+        # Verifica se consegue listar arquivos do dataset com 2 arquivos
         controle_arquivos:ControleArquivos = self.__classe_teste
-        assert controle_arquivos.get_pasta_dataset.is_dir()
-    
-    def test_verificar_existem_arquivos_dataset(self):
-        controle_arquivos:ControleArquivos = self.__classe_teste
-        assert(len(controle_arquivos._carregar_todo_dataset())>0)
+        assert len(controle_arquivos._carregar_lista_arquivos_dataset()) == 2
 
-    def test_pasta_dataset_vazia(self, tmp_path):        
+    def test_verificar_arquivo_dataset_vazio(self, tmp_path):
+        # Verifica se retorna lista vazia ao carregar pasta dataset vazia
         dataset_dir = tmp_path / "pasta_test2"
         dataset_dir.mkdir()
         controle_arquivos:ControleArquivos = self.__classe_teste
         controle_arquivos.set_pasta_dataset(dataset_dir)
-        assert controle_arquivos._carregar_todo_dataset() == []
+        assert len(controle_arquivos._carregar_lista_arquivos_dataset()) == 0
 
-    def test_pasta_dataset_com_arquivo(self):
+    def test_buscar_arquivos_processados_vazios(self):
+        # Verifica se retorna array vazio ao carregar lista de arquivo processado:
+        # - Não existe
         controle_arquivos:ControleArquivos = self.__classe_teste
-        assert len(controle_arquivos._carregar_todo_dataset()) == 2
-
-    def test_buscar_arquivo_processado_vazio(self, tmp_path):
-        dataset_dir = tmp_path / "pasta_test2"
-        dataset_dir.mkdir()
-        controle_arquivos:ControleArquivos = self.__classe_teste
-        controle_arquivos.set_pasta_dataset(dataset_dir)
-        assert controle_arquivos._get_lista_arquivos_processados() == []
+        assert len(controle_arquivos._get_lista_arquivos_processados()) == 0
 
     def test_buscar_arquivo_processado_em_branco(self):
+        # Verifica se retorna array vazio ao carregar lista de arquivo processado:
+        # - Existe, mas em branco
         controle_arquivos:ControleArquivos = self.__classe_teste
-        controle_arquivos.get_arquivo_arquivos_processados.write_text("", encoding='utf-8')
+        controle_arquivos.get_path_arquivos_processados.write_text("", encoding='utf-8')
         assert controle_arquivos._get_lista_arquivos_processados() == []
 
     def test_buscar_arquivo_processado_sem_valores(self):
+        # Verifica se retorna array vazio ao carregar lista de arquivo processado:
+        # - Existe com cabeçalho, mas sem valores
         controle_arquivos:ControleArquivos = self.__classe_teste
-        controle_arquivos.get_arquivo_arquivos_processados.write_text("nome,modelo_processamento", encoding='utf-8')
+        controle_arquivos.get_path_arquivos_processados.write_text("nome,modelo_processamento", encoding='utf-8')
         assert controle_arquivos._get_lista_arquivos_processados() == []
 
     def test_verificar_texto_ja_foi_processado(self):
+        # Verifica:
+        # - Arquivo processado com todo o dataset
+        # - Não encontra nenhum texto para processar e retorna []
+        texto = "nome,modelo_processamento\ntexto1.txt,trie\ntexto2.txt,trie"
         controle_arquivos:ControleArquivos = self.__classe_teste
-        controle_arquivos.get_arquivo_arquivos_processados.write_text("nome,modelo_processamento\ntexto1.txt,trie\ntexto2.txt,trie", encoding='utf-8')
-        assert controle_arquivos._carregar_todo_dataset() == []
+        controle_arquivos.get_path_arquivos_processados.write_text(texto, encoding='utf-8')
+        assert controle_arquivos._carregar_lista_arquivos_dataset() == []
 
-    def test_verificar_texto_ja_foi_processado_caso_2(self):
+    def test_verificar_texto_ja_foi_processado_caso_2(self):        
+        # Verifica:
+        # - Arquivo processado com apenas um arquivo do dataset
+        # - Encontra somente o texto2.txt como não processado
+        texto = "nome,modelo_processamento\ntexto1.txt,trie"
         controle_arquivos:ControleArquivos = self.__classe_teste
-        #criando dataset temporario        
-        texto3 = self.__classe_teste.get_pasta_dataset / "texto3.txt"
-        texto3.write_text("texto inicial 3", encoding='utf-8')
+        controle_arquivos.get_path_arquivos_processados.write_text(texto, encoding='utf-8')
 
-        #criando o arquivo_processado
-        controle_arquivos.get_arquivo_arquivos_processados.write_text("nome,modelo_processamento\ntexto1.txt,trie\ntexto2.txt,trie", encoding='utf-8')
-
-        # apenas o texto3 não foi processado
-        resultado_esperado = ['texto3.txt']
-        for texto in controle_arquivos._carregar_todo_dataset():
-            assert texto.name in  resultado_esperado
+        #verifica se o texto 2 não foi processado
+        resposta = controle_arquivos._carregar_lista_arquivos_dataset()
+        assert len(resposta) == 1
+        for texto in resposta:
+            assert texto.name == 'texto2.txt'
     
-    def test_salvar_lista_arquivos_processados(self):
-        controle_arquivos:ControleArquivos = self.__classe_teste
-        controle_arquivos._salvar_texto_processado('texto3.txt','trie')
-        resultado = controle_arquivos._get_lista_arquivos_processados()
-        assert resultado[0] == ['texto3.txt','trie']
-    
-    def test_processar_textos(self):
+    def test_verifica_erro_arquivos_processados(self):
+        # teste que verifica como fica os arquivos processados processar texto após 
         controle_arquivos:ControleArquivos = self.__classe_teste
 
         controle_arquivos.processar_textos()
