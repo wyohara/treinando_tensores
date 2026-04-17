@@ -50,19 +50,17 @@ class ProcessadorTextoAbs(ABC):
     
     @staticmethod
     def hex_para_texto(texto_hex):
-        return bytes.fromhex(texto_hex).decode('utf-8',errors='surrogateescape')
+        return bytes.fromhex(texto_hex.replace("#",'')).decode('utf-8',errors='surrogateescape')
     
     @abstractmethod
     def processar_textos(self, texto:str)->bool:
         pass
 
     
-    def salvar_csv_tokens(self, path:Path, tokens:list[list], cabecalhos:list[str]):
+    def salvar_csv_tokens(self, path:Path, tokens:list[list], cabecalhos:list[str], reset=False):
         if not tokens:
             return False  # Sem dados
-        
-        num_colunas = len(cabecalhos)
-        
+            
         # Verifica se todas as linhas têm o número correto de colunas
         for i, linha in enumerate(tokens):
             if len(linha) != len(cabecalhos):
@@ -80,13 +78,19 @@ class ProcessadorTextoAbs(ABC):
             
         except (OSError, PermissionError, IOError) as e:
             return False
+    
+    @abstractmethod
+    def _carregar_dados(self):
+        pass
+    
+    @abstractmethod
+    def montar_lista_tokens(self,quantidade=100) -> list[str,int,str, int]:
+        """
+        A partir do dicionário da Trie, retorna uma lista de TokenObject
+        Params:
+            formato: formato do texto em 'utf-8' ou 'hex'
         
-    def carregar_lista_tokens(self, path:Path)->list:
-        try:
-            df = pd.read_csv(str(path))
-            dados = df.values.tolist()
-            return dados
-        except pd.errors.EmptyDataError:
-            return []
-        except FileNotFoundError:
-            return []
+        Returns:
+            list[token, quantidade_fim, tipo, id]: lista de objetos de token para salvar no bd
+        """
+        pass

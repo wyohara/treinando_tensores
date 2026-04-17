@@ -3,13 +3,15 @@ from pathlib import Path
 import json
 import re
 import pandas as pd
-from src.tokenizador.processadores_texto.arvore_trie import ArvoreTrie
+import time
+from src.ferramentas.medidores import wrapper_timer
+from src.tokenizador.processadores_texto.processador_word_piece import ProcessadorWordPiece
 
 class ControleArquivos:
     def __init__(self):
         self.__pasta_dataset = Path('src/arquivos/dataset')
         self.__arquivos_processados = Path('src/arquivos/dados_processamento/arquivos_processados.csv')     
-        self.__processador_textos = ArvoreTrie()   
+        self.__processador_textos = ProcessadorWordPiece()   
     
     @property
     def get_pasta_dataset(self)->Path:
@@ -91,7 +93,7 @@ class ControleArquivos:
                 resultado.append(arquivo)
         return resultado
 
-    def processar_textos(self, path_test:Path = None):
+    def processar_textos(self, ):
         '''
         Método que processa os textos
 
@@ -102,18 +104,14 @@ class ControleArquivos:
         return:
             list[token, quantidade_fim, tipo, id]: lista de tokens do texto processado
         '''        
-        if path_test is not None:
-            texto = path_test.read_text(encoding='utf-8')
+        
+        datasets = self._carregar_lista_arquivos_dataset()
+        #processa todos os textos que não estão na lista de processados
+        for dt in datasets:
+            texto = dt.read_text(encoding='utf-8')            
             self.__processador_textos.processar_textos(texto)
-
-        else:
-            datasets = self._carregar_lista_arquivos_dataset()
-            #processa todos os textos que não estão na lista de processados
-            for dt in datasets:
-                texto = dt.read_text(encoding='utf-8')
-                self.__processador_textos.processar_textos(texto)
-                #salvando o arquivo
-                self._salvar_texto_processado(str(dt.name), 'trie')
+            #salvando o arquivo
+            self._salvar_texto_processado(str(dt.name), 'trie')
         return self.__processador_textos.montar_lista_tokens()
     
     def salvar_tokens(self, tokens:list):
